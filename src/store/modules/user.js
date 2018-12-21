@@ -29,10 +29,11 @@ const user = {
     Login({ commit }, userInfo) {
       const username = userInfo.username.trim()
       return new Promise((resolve, reject) => {
-        login(username, userInfo.password).then(response => {
-          const data = response.data
-          setToken(data.token)
-          commit('SET_TOKEN', data.token)
+        login(username, userInfo.password).then(data => {
+          console.log(data)
+          setToken(data.t)
+          commit('SET_TOKEN', data.t)
+          console.log("finish")
           resolve()
         }).catch(error => {
           reject(error)
@@ -43,16 +44,20 @@ const user = {
     // 获取用户信息
     GetInfo({ commit, state }) {
       return new Promise((resolve, reject) => {
-        getInfo(state.token).then(response => {
-          const data = response.data
-          if (data.roles && data.roles.length > 0) { // 验证返回的roles是否是一个非空数组
-            commit('SET_ROLES', data.roles)
+        getInfo(state.token).then(data => {
+
+          var permission = data.u.permission || ''
+          var roles = permission.split(':')
+
+          if (roles && roles.length > 0) {   // 验证返回的roles是否是一个非空数组
+            commit('SET_ROLES', roles)
           } else {
-            reject('getInfo: roles must be a non-null array !')
+            reject('getInfo: user have no permission')
           }
-          commit('SET_NAME', data.name)
-          commit('SET_AVATAR', data.avatar)
-          resolve(response)
+
+          commit('SET_NAME', data.u.name)
+          commit('SET_AVATAR', data.u.avatar)
+          resolve(data)
         }).catch(error => {
           reject(error)
         })

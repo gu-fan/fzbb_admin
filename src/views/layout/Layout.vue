@@ -37,6 +37,9 @@ export default {
       }
     }
   },
+  mounted(){
+    console.log("mount layout")
+  },
   methods: {
     handleClickOutside() {
       this.$store.dispatch('CloseSideBar', { withoutAnimation: false })
