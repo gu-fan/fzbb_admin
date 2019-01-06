@@ -28,11 +28,11 @@ export const constantRouterMap = [
   {
     path: '/',
     component: Layout,
-    redirect: '/censor',
+    redirect: '/dashboard',
     name: 'Dashboard',
-    hidden: true,
     children: [{
       path: 'dashboard',
+      meta: { title: 'Dashboard', icon: 'dashboard' },
       component: () => import('@/views/dashboard/index')
     }]
   }
@@ -43,7 +43,7 @@ export const asyncRouterMap = [
     path: '/staff',
     component: Layout,
     name: 'Staff',
-    meta: { title: 'Staff', icon: 'user',  roles:['admin','superadmin']  },
+    meta: { title: 'Staff', icon: 'admin-o',  roles:['admin','superadmin']  },
     children: [{
       path: '/staff',
       component: () => import('@/views/staff/index'),
@@ -66,7 +66,7 @@ export const asyncRouterMap = [
     path: '/editor',
     component: Layout,
     name: 'Editor',
-    meta: { title: 'editor', icon: 'example' },
+    meta: { title: 'editor', icon: 'form' },
     children: [{
       path: '/editor',
       component: () => import('@/views/editor/index'),
@@ -77,7 +77,7 @@ export const asyncRouterMap = [
     path: '/user',
     component: Layout,
     name: 'User',
-    meta: { title: 'user', icon: 'example' },
+    meta: { title: 'user', icon: 'user' },
     children: [{
       path: '/user',
       component: () => import('@/views/user/index'),
