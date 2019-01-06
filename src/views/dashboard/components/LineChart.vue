@@ -112,9 +112,9 @@ export default {
         series: [{
           name: '本周', itemStyle: {
             normal: {
-              color: '#FF005A',
+              color: '#5959FF',
               lineStyle: {
-                color: '#FF005A',
+                color: '#5959FF',
                 width: 2
               }
             }
@@ -131,9 +131,9 @@ export default {
           type: 'line',
           itemStyle: {
             normal: {
-              color: '#3888fa',
+              color: '#CCCCCC',
               lineStyle: {
-                color: '#3888fa',
+                color: '#CCCCCC',
                 width: 2
               },
               areaStyle: {
