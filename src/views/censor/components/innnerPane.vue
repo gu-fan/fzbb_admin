@@ -27,7 +27,9 @@
         </el-table-column>
         <el-table-column  label="Content">
           <template slot-scope="innerScope">
-            <span>{{ innerScope.row.content.substring(0,40) }}</span>
+            <span v-if="innerScope.row.content_json==null">{{ innerScope.row.content.substring(0,80) }}</span>
+            <span v-else>{{ innerScope.row.content_json.brief.substring(0,80) }}</span>
+
           </template>
         </el-table-column>
         

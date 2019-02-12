@@ -71,7 +71,9 @@
 
     <el-table-column align="center" label="Content" min-width="95">
       <template slot-scope="scope">
-        <span>{{ scope.row.content.substring(0,40) }}</span>
+          <span v-if="scope.row.content_json==null">{{ scope.row.content.substring(0,80) }}</span>
+          <span v-else>{{ scope.row.content_json.brief.substring(0,80) }}</span>
+
       </template>
     </el-table-column>
 
@@ -149,9 +151,15 @@
             {{ temp.created_at| fromNow }}
           </div>
         </div>
-        <div style="margin-top:12px;padding:12px 0;border-bottom:1px solid #F1F1F1;border-top:1px solid #F1F1F1;white-space:pre-wrap;">
-          {{ temp.content}}
+
+        <div class="content-wrap">
+          <div v-if="temp.content!=null" class="content-plain">{{ temp.content }}</div>
+          <div v-else v-for="(con,idx) in temp.content_json.data" :key="idx">
+            <div v-if="con.t=='text'" class="content-text">{{ con.text }}</div>
+            <img  v-else-if="con.t=='img'" :src="con.url" >
+          </div>
         </div>
+
       </div>
 
       <div slot="footer" class="dialog-footer" style="margin-top:5px;">
@@ -160,9 +168,6 @@
       </div>
     </el-dialog>
 
-
-
-
   </div>
 </template>
 
@@ -170,6 +175,7 @@
 import { getAnswers, getList,Reject,Pass } from '@/api/censor'
 import {fromNow} from '@/utils/moment'
 import innerPane from './innnerPane'
+import {setContentBrief} from '@/utils'
 
 const calendarTypeOptions = [
   { key: 'all', display_name: 'All' },
@@ -219,6 +225,7 @@ export default {
         created_at: new Date(),
         title: '',
         content:'',
+        content_json:{v:"0",data:[]},
         censor_status: 'published'
       },
       dialogFormVisible: false,
@@ -267,6 +274,8 @@ export default {
             .then(res=>{
               var answers = res.answers
               answers.page = 0
+              answers.results = setContentBrief(answers.results)
+
               this.$set(this.list[idx], 'answers', answers)
               console.log(answers)
 
@@ -345,7 +354,8 @@ export default {
 
         } else {
           this.total = data.answers.total
-          this.list = data.answers.results
+          this.list = setContentBrief(data.answers.results)
+
         }
         this.loading = false
         console.log(this.total)
@@ -359,3 +369,30 @@ export default {
 }
 </script>
 
+<style>
+.content-wrap {
+  background-color:#FFF;
+  min-height:200px;
+  padding: 15px 0 25px;
+
+}
+.content-text {
+  white-space:pre-wrap;
+}
+.content-wrap > div{
+  padding:0;
+  margin:0;
+  position:relative;
+}
+.content-wrap img {
+  width: 100%;
+  height: auto;
+  display:block;
+  margin:0;
+}
+.content-plain {
+  margin-top:12px;padding:12px 0;border-bottom:1px solid #F1F1F1;border-top:1px solid #F1F1F1;
+  white-space:pre-wrap;
+}
+
+</style>

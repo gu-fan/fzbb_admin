@@ -107,3 +107,35 @@ export function debounce(func, wait, immediate) {
     return result
   }
 }
+
+export function setBrief(ans){
+    if (ans.content_json!=null) {
+
+      var brief = ans.content_json.data.reduce((all,n)=>{
+        if (n.t=='text') {
+          return all += '\n' + n.text
+        } else {
+          return all
+        }
+      }, '')
+      ans.content_json.brief = brief
+
+    }
+
+    return ans
+}
+
+export function setContentBrief(data){
+    var results = data.map(ans=>{
+      return setBrief(ans)
+    })
+  return results
+}
+
+export function genUID() {
+    var firstPart = (Math.random() * 1679616) | 0;
+    var secondPart = (Math.random() * 1679616) | 0;
+    firstPart = ("0000" + firstPart.toString(36)).slice(-4);
+    secondPart = ("0000" + secondPart.toString(36)).slice(-4);
+    return firstPart + secondPart;
+}

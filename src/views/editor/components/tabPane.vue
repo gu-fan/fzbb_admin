@@ -1,5 +1,4 @@
 <template>
-
   <div>
 
     <div class="flex vert-center" style="height:60px;">
@@ -73,7 +72,8 @@
 
     <el-table-column align="center" label="Content" min-width="95">
       <template slot-scope="scope">
-        <span>{{ scope.row.content.substring(0,40) }}</span>
+          <span v-if="scope.row.content_json==null">{{ scope.row.content.substring(0,80) }}</span>
+          <span v-else>{{ scope.row.content_json.brief.substring(0,80) }}</span>
       </template>
     </el-table-column>
 
@@ -97,8 +97,8 @@
 
   </el-table>
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;" ref="dialogForm">
+    <el-dialog class="content-form" :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
+      <el-form :rules="rules" :model="temp" label-position="left" label-width="70px" style="min-width: 400px; margin-left:50px;" ref="dialogForm">
 
         <el-form-item v-if="/edit/i.test(dialogStatus)" label="name" prop="name">
           {{ temp.author.name}}
@@ -119,14 +119,36 @@
           </el-form-item>
         </el-form-item>
         </div>
+
         <div v-else>
+
+         {{ focus_item }}
+
           <el-form-item v-if="/question/i.test(dialogStatus)" label="问题标题" prop="title">
             <el-input v-model="temp.title"/>
           </el-form-item>
           <el-form-item label="问题内容" prop="content">
-             <el-input 
+             <el-input v-if="temp.content_json==null"
                 :rows="5"
                type="textarea" v-model="temp.content"/>
+
+          <div v-else class="content-wrap" >
+            <div v-for="(con,idx) in temp.content_json.data" :key="idx">
+              <el-input type="textarea"  v-if="con.t=='text'" class="content-text" v-model="con.text" rows=5 maxlength=-1 placeholder="  " cursor-spacing=20  @focus.stop="focusText(idx, $event)" autosize />
+              <img v-else-if="con.t=='img'" :src="con.url" alt="" mode="widthFix"  @click.stop="focusImg(idx, $event)">
+              <div class="img-del-btn" :class='focus_img == idx ? "show" : "hide"'  @click="delImage(idx)"  v-if="con.t=='img'">删除图片</div>
+            </div>
+          </div>
+          
+          <input id="file-selector" type="file" v-show="false" @change="onChange" ref="upload">
+
+        <div class="img-box">
+          <img :src="temp.avatar" alt="" ref="img" class="avatar">
+        </div>
+          <el-button 
+            :loading="upload_loading" 
+            @click="addImage">{{ confirm_or_progress }}</el-button>
+
           </el-form-item>
         </el-form-item>
 
@@ -161,9 +183,15 @@
             {{ temp.created_at|fromNow }}
           </div>
         </div>
-        <div style="margin-top:12px;padding:12px 0;border-bottom:1px solid #F1F1F1;border-top:1px solid #F1F1F1;white-space:pre-wrap;">
-          {{ temp.content }}
+
+        <div class="content-wrap">
+          <div v-if="temp.content_json==null" class="content-plain">{{ temp.content }}</div>
+          <div v-else v-for="(con,idx) in temp.content_json.data" :key="idx">
+            <div v-if="con.t=='text'" class="content-text">{{ con.text }}</div>
+            <img  v-else-if="con.t=='img'" :src="con.url" >
+          </div>
         </div>
+
       </div>
 
       <div slot="footer" class="dialog-footer" style="margin-top:5px;">
@@ -172,9 +200,6 @@
       </div>
     </el-dialog>
 
-
-
-
   </div>
 </template>
 
@@ -182,9 +207,14 @@
 import { getAnswers, getList,Reject,Pass } from '@/api/censor'
 import {fromNow} from '@/utils/moment'
 import innerPane from './innnerPane'
-
 import { getUsers, getUsersByName } from '@/api/user'
 import { editQuestion, editAnswer, createAnswer, createQuestion } from '@/api/censor'
+
+import {setContentBrief, setBrief, genUID} from '@/utils'
+
+import request from '@/utils/request'
+import { cos, Bucket, Region } from '@/utils/upload'
+import data2blob from '@/utils/data2blob'
 
 const calendarTypeOptions = [
   { key: 'all', display_name: 'All' },
@@ -193,6 +223,7 @@ const calendarTypeOptions = [
   { key: 'reject', display_name: 'Reject' },
   { key: 'reject_review', display_name: 'Review' },
 ]
+
 
 export default {
   components: { innerPane },
@@ -212,6 +243,15 @@ export default {
       default: 'question'
     }
   },
+  computed: {
+    confirm_or_progress(){
+      if (this.upload_loading) {
+        return (this.progress * 100) + "%"
+      } else {
+        return "upload"
+      }
+    },
+  },
   data() {
     return {
       calendarTypeOptions,
@@ -228,6 +268,11 @@ export default {
       total:0,
       loading: false,
 
+      progress: 0,
+      upload_loading: false,
+
+      focus_item: -1,
+      focus_img: -1,
 
       userListOptions: [],
 
@@ -237,6 +282,7 @@ export default {
         author_id:'',
         title: '',
         content:'',
+        content_json: {v:"0",data:[{text:"",t:"text"}]}
       },
       dialogFormVisible: false,
       dialogViewVisible: false,
@@ -248,7 +294,7 @@ export default {
         answer: 'answer'
       },
       rules: {
-        content: {required:true},
+        content_json: {required:true},
         title: {required:true},
         author_id: {required:true},
       },
@@ -296,6 +342,8 @@ export default {
 
               var answers = res.answers
               answers.page = 0
+
+              answers.results = setContentBrief(answers.results)
               this.$set(this.list[idx], 'answers', answers)
               console.log(answers)
 
@@ -372,7 +420,8 @@ export default {
 
         } else {
           this.total = data.answers.total
-          this.list = data.answers.results
+          
+          this.list = setContentBrief(data.answers.results)
         }
         this.loading = false
         console.log(this.total)
@@ -405,7 +454,6 @@ export default {
       }
     },
     createQuestion() {
-      console.log(this.temp)
       createQuestion(this.temp)
         .then(res=>{
           console.log(res)
@@ -413,13 +461,16 @@ export default {
         })
     },
     addAnswer(id){
-      this.dialogStatus = 'answer'
-      this.dialogFormVisible = true
       this.temp = {
         question_id:id,
         author_id:null,
         content:'',
+        content_json: {v:"0",data:[
+          {text:"",t:"text"},
+        ]}
       }
+      this.dialogStatus = 'answer'
+      this.dialogFormVisible = true
       
     },
     createAnswer() {
@@ -438,6 +489,7 @@ export default {
           })
           console.log(this.temp.question_id)
           console.log(idx)
+          var answer = setBrief(res.answer)
           this.list[idx].answers.results.splice(0, 0, res.answer)
           this.dialogFormVisible = false
         })
@@ -475,8 +527,235 @@ export default {
       })
       
     },
+    addImage(){
+      console.log("add image")
+      this.$refs.upload.click()
+    },
+
+    onChange(e){
+
+        var file = this.$refs.upload.files[0];
+        if (!file) return;
+
+          var fr = new FileReader()
+
+          fr.onload = (e) =>{
+            this.sourceImgUrl = fr.result
+            var img = this.$refs.img
+            img.src = this.sourceImgUrl
+            var f = data2blob(this.sourceImgUrl, 'image/png')
+            this.filename = file.name
+            this.file = f
+            console.log('loaded')
+            this.uploadFile()
+        }
+
+        fr.readAsDataURL(file);
+
+    },
+
+    uploadFile(){
+      if (this.upload_loading) {
+        console.log("loading")
+        return
+      }
+      if (!this.file) {
+        console.log("file empty")
+        return
+      }
+      
+      var that = this
+      this.upload_loading = true
+
+      var ext = this.filename.split('.').slice(-1).pop()
+      var key = 'p/' + genUID() + '/' + genUID() + '.' + ext
+
+      cos.sliceUploadFile({
+          Bucket: Bucket,
+          Region: Region,
+          Key: key,
+          Body: this.file,
+          onReady: function(res){
+            console.log("ready")
+          },
+          onHashProgress: function (progressData) {
+              console.log('校验中', JSON.stringify(progressData));
+          },
+          onProgress: function (progressData) {
+              console.log('上传中', JSON.stringify(progressData));
+              that.progress = progressData.percent
+          },
+      }, (err, data)=> {
+        console.log(data)
+
+        that.upload_loading = false
+
+        if (err) {
+          console.log(err)
+          return
+        }
+
+        // fzbb-1257828075.file.myqcloud.com
+        // http://fzbb-1257828075.cos.ap-shanghai.myqcloud.com/IMG_0054.JPG
+
+        var cdn = data.Location.replace("cos.ap-shanghai", "file")
+        var cdn_url = "http://" + cdn
+
+        if (this.isFirstLineEmptyText()){
+          this.removeFirstLine()
+        }
+
+        if (this.focus_item==this.temp.content_json.data.length-1 || this.focus_item == -1) {
+          console.log("add empty")
+
+          if (this.isLastLineEmptyText()){
+            this.removeLastLine()
+          }
+          this.temp.content_json.data.push(
+              {t:'img',url:cdn_url, loading:true}
+          )
+          if (this.focus_item != -1) {
+            this.focus_item++
+          } else {
+            this.focus_item = this.temp.content_json.data.length-2
+          }
+        } else {
+          this.temp.content_json.data.splice(this.focus_item+1, 0,
+              {t:'img',url:cdn_url, loading:true}
+          )
+          this.focus_item++
+        }
+        if (this.isLastLineImage()){
+          this.addEmptyTextLine()
+        }
+
+       this.$refs.upload.value = ''
+
+      });
+    },
+    addEmptyTextLine(){
+      this.temp.content_json.data.push(
+          {t:'text', text:''},
+      )
+    },
+    isFirstLineEmptyText(){
+      var len = this.temp.content_json.data.length
+      if (len==0)  return false
+      if (this.temp.content_json.data[0].t == 'text' && this.temp.content_json.data[0].text == '') {
+        return true
+      } else {
+        return false
+      }
+    },
+    removeFirstLine(){
+        this.temp.content_json.data.splice(0,1);
+    },
+    removeLastLine(){
+        this.temp.content_json.data.splice(-1,1);
+    },
+    isLastLineImage(){
+      var len = this.temp.content_json.data.length
+      if (len==0)  return true
+      if (this.temp.content_json.data[len-1].t == 'img') {
+        return true
+      } else {
+        return false
+      }
+    },
+    isLastLineEmptyText(){
+      var len = this.temp.content_json.data.length
+      if (len==0)  return true
+      if (this.temp.content_json.data[len-1].t == 'text' && this.temp.content_json.data[len-1].text == '') {
+        return true
+      } else {
+        return false
+      }
+    },
+    combineTextLines(){
+      var arr = []
+      this.temp.content_json.data.reduce((a,b)=>{
+        var len = a.length
+        if (len>=1) {
+          if (a[len-1].t=="text" && b.t=="text") {
+            a[len-1].text += "\n" +b.text
+          } else {
+            arr.push(b)
+          }
+        } else {
+            arr.push(b)
+        }
+        return arr
+      }, arr)
+
+      this.temp.content_json.data = arr
+    },
+    focusText(idx,e){
+      console.log("text")
+      this.focus_img = -1
+      this.focus_item = idx
+    },
+    focusImg(idx,e){
+      this.focus_img = idx
+      this.focus_item = idx
+    },
+    delImage(idx){
+        this.focus_img = -1
+        this.focus_item = idx > 0 ? idx-1: 0
+        this.temp.content_json.data.splice(idx,1);
+        this.combineTextLines()
+    },
 
   }
 }
 </script>
+<style>
+.content-wrap {
+  background-color:#FFF;
+  min-height:200px;
+  padding: 15px 0 25px;
+
+}
+.content-text {
+  white-space:pre-wrap;
+}
+.content-wrap > div{
+  padding:0;
+  margin:0;
+  position:relative;
+}
+.content-wrap img {
+  width: 100%;
+  height: auto;
+  display:block;
+  margin:0;
+}
+.content-plain {
+  margin-top:12px;padding:12px 0;border-bottom:1px solid #F1F1F1;border-top:1px solid #F1F1F1;
+  white-space:pre-wrap;
+}
+.img-box img {
+  width: 20px;
+  height:auto;
+}
+.hide {
+  display:none;
+}
+.img-del-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 5px;
+  padding: 6px;
+  font-size:14px;
+  color: #666;
+}
+
+.content-form .el-dialog {
+  width: 80%;
+}
+.content-form .el-textarea__inner {
+  border-radius: 0;
+}
+</style>
 

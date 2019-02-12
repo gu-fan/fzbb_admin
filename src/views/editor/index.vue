@@ -15,7 +15,7 @@ import { mapGetters } from 'vuex'
 import tabPane from './components/tabPane'
 
 export default {
-  name: 'Censor',
+  name: 'Editor',
   components: { tabPane },
   data() {
     return {
@@ -39,7 +39,7 @@ export default {
     ])
   },
   mounted(){
-    console.log("mount censor")
+    console.log("mount editor")
   }
 }
 </script>

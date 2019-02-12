@@ -53,11 +53,11 @@
         <input id="file-selector" type="file" v-show="false" @change="onChange" ref="upload">
 
         <div class="img-box">
-          <img :src="temp.avatar" alt="" ref="img" class="avatar">
+          <img :src="temp.avatar" alt="" ref="img" class="avatar" >
+          <el-button @click="selectFile" >
+             改变头像
+          </el-button>
         </div>
-        <el-button @click="selectFile" >
-           change avatar
-        </el-button>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">cancel</el-button>
@@ -84,7 +84,8 @@
 
       <el-table-column label="avatar" width="110" align="center">
         <template slot-scope="scope">
-          <img :src="scope.row.avatar" alt="" class="avatar">
+          <img :src="scope.row.avatar" alt="" class="avatar"  :class="scope.row.avatar ? '' : 'no-src' ">
+          
         </template>
       </el-table-column>
 
@@ -133,38 +134,19 @@
 import { mapGetters } from 'vuex'
 import { getUsers,setUser } from '@/api/user'
 import { fromNow } from '@/utils/moment'
-import request from '@/utils/request'
-import data2blob from './data2blob'
 import { Message, MessageBox } from 'element-ui'
 
-import COS from 'cos-js-sdk-v5'
+import { cos, Bucket, Region } from '@/utils/upload'
+import data2blob from '@/utils/data2blob'
+import request from '@/utils/request'
+import {genUID} from '@/utils'
 
 const calendarTypeOptions = [
   { key: 0, display_name: 'wechat' },
   { key: 1, display_name: 'dashboard' },
 ]
 
-var Bucket = 'fzbb-1257828075';
-var Region = 'ap-shanghai';
-
-var cos = new COS({
-          getAuthorization: function (options, callback) {
-            request({
-              url: '/kpass/cos',
-              method: 'get',
-            })
-            .then(data=>{
-                  callback({
-                      TmpSecretId: data.credentials && data.credentials.tmpSecretId,
-                      TmpSecretKey: data.credentials && data.credentials.tmpSecretKey,
-                      XCosSecurityToken: data.credentials && data.credentials.sessionToken,
-                      ExpiredTime: data.expiredTime,
-                  });
-
-
-            })
-          }
-      });
+console.log(cos)
 
 export default {
   name: 'User',
@@ -322,17 +304,19 @@ export default {
       var that = this
       this.loading = true
 
+      var ext = this.filename.split('.').slice(-1).pop()
+      var key = 'u/' + genUID() + '/' + genUID() + '.' + ext
+
       cos.sliceUploadFile({
           Bucket: Bucket,
           Region: Region,
-          Key: this.filename,
+          Key: key,
           Body: this.file,
           onReady: function(res){
             console.log("ready")
           },
           onHashProgress: function (progressData) {
               console.log('校验中', JSON.stringify(progressData));
-
           },
           onProgress: function (progressData) {
               console.log('上传中', JSON.stringify(progressData));
@@ -344,6 +328,7 @@ export default {
         that.loading = false
         // fzbb-1257828075.file.myqcloud.com
         // http://fzbb-1257828075.cos.ap-shanghai.myqcloud.com/IMG_0054.JPG
+
         var cdn = data.Location.replace("cos.ap-shanghai", "file")
         that.temp.avatar = "http://" + cdn
         that.setUser()
@@ -396,9 +381,11 @@ export default {
   }
 }
 .img-box {
-  width: 200px;
+  width: auto;
   height: auto;
-  background-color:red;
+  display:flex;
+
+  justify-content: flex-start;
 
   img {
     width: 200px;
@@ -406,9 +393,13 @@ export default {
   }
 
 }
+img.no-src { content:url("data:image/gif;base64,R0lGODlhAQABAPAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="); }
 img.avatar {
-  width: 100px;
-  height: 100px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #EEE;
+  background-color: #EEE;
+  border-radius:10px;
 }
 
 </style>
