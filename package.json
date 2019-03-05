@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "npm run dev",
-    "build": "node build/build.js",
+    "build": "cross-env NODE_ENV=production env_config=prod node build/build.js",
+    "build_test": "cross-env NODE_ENV=production env_config=test node build/build.js",
     "build:report": "npm_config_report=true npm run build",
     "deploy": "sh deploy/admin.sh",
+    "deploy_test": "sh deploy/test.sh",
     "lint": "eslint --ext .js,.vue src",
     "test": "npm run lint",
     "svgo": "svgo -f src/icons/svg --config=src/icons/svgo.yml"

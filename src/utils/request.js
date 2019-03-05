@@ -4,10 +4,13 @@ import store from '../store'
 import { getToken } from '@/utils/auth'
 
 // 创建axios实例
+var base_url =process.env.BASE_API
 const service = axios.create({
-  baseURL: process.env.BASE_API, // api 的 base_url
+  baseURL:  base_url ,
+  // api 的 base_url
   timeout: 5000 // 请求超时时间
 })
+console.log(base_url)
 
 // request拦截器
 service.interceptors.request.use(
