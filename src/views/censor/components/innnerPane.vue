@@ -32,6 +32,14 @@
 
           </template>
         </el-table-column>
+      <el-table-column class-name="select-col" label="Select" width="80">
+        <template slot-scope="innerScope">
+          <el-tag >{{ innerScope.row.is_selected }}</el-tag>
+
+              <el-button size="mini" v-if="!innerScope.row.is_selected" @click="onSelect(innerScope.row.id, innerScope.$index, scope.$index)">精华</el-button>
+              <el-button size="mini" v-else @click="onUnSelect(innerScope.row.id, innerScope.$index, scope.$index)">取消精华</el-button>
+        </template>
+      </el-table-column>
         
       <el-table-column class-name="status-col" label="Status" width="80">
         <template slot-scope="innerScope">
@@ -82,6 +90,12 @@ export default {
     },
     onView(row, idx){
       this.$emit('innerView', row)
+    },
+    onSelect(id, idx, oIdx){
+      this.$emit('innerSelect', {id,idx,oIdx})
+    },
+    onUnSelect(id, idx, oIdx){
+      this.$emit('innerUnSelect', {id,idx,oIdx})
     },
     
   }

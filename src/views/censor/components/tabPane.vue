@@ -27,7 +27,7 @@
 
     <el-table-column type="expand" v-if="type=='question'">
       <template slot-scope="scope">
-        <innerPane :scope="scope" @innerView="onView" @innerPass="onInnerPass" @innerReject="onInnerReject"/>
+        <innerPane :scope="scope" @innerView="onView" @innerSelect="onInnerSelect" @innerPass="onInnerPass" @innerUnSelect="onInnerUnSelect" @innerReject="onInnerReject"/>
       </template>
     </el-table-column>
 
@@ -172,10 +172,10 @@
 </template>
 
 <script>
-import { getAnswers, getList,Reject,Pass } from '@/api/censor'
+import { getAnswers, getList,Reject,Pass,Select,UnSelect } from '@/api/censor'
 import {fromNow} from '@/utils/moment'
 import innerPane from './innnerPane'
-import {setContentBrief} from '@/utils'
+import {setContentBrief, setBrief} from '@/utils'
 
 const calendarTypeOptions = [
   { key: 'all', display_name: 'All' },
@@ -295,6 +295,34 @@ export default {
       this.listQuery.page = 0
       this.getList()
     },
+
+    onInnerSelect(param){
+      var {id,idx,oIdx} = param
+      console.log(id)
+      console.log(idx)
+      console.log(oIdx)
+      Select(id, 'answer')
+        .then(res=>{
+          if (this.type=="question") {
+            var ans = setBrief(res.answer)
+            this.list[oIdx].answers.results.splice(idx, 1, ans)
+          }
+        })
+    },
+    onInnerUnSelect(param){
+      var {id,idx,oIdx} = param
+      console.log(id)
+      console.log(idx)
+      console.log(oIdx)
+      UnSelect(id, 'answer')
+        .then(res=>{
+          if (this.type=="question") {
+            var ans = setBrief(res.answer)
+            this.list[oIdx].answers.results.splice(idx, 1, ans)
+          }
+        })
+    },
+
     onInnerPass(param){
       var {id,idx,oIdx} = param
       console.log(id)
@@ -303,8 +331,10 @@ export default {
       Pass(id, 'answer')
         .then(res=>{
           if (this.type=="question") {
-            this.list[oIdx].answers.results.splice(idx, 1, res.answer)
+            var ans = setBrief(res.answer)
+            this.list[oIdx].answers.results.splice(idx, 1, ans)
           }
+
         })
     },
 
@@ -313,7 +343,8 @@ export default {
       Reject(id, 'answer')
         .then(res=>{
           if (this.type=="question") {
-            this.list[oIdx].answers.results.splice(idx, 1, res.answer)
+            var ans = setBrief(res.answer)
+            this.list[oIdx].answers.results.splice(idx, 1, ans)
           }
         })
     },

@@ -40,6 +40,31 @@ export function Reject(id, type) {
   }
 }
 
+export function Select(id, type) {
+  if ( type == 'question' ) {
+    console.log('question can not select')
+    throw new Error('question can not select')
+  } else {
+      return request({
+        url: '/censor/a/'+ id,
+        method: 'post',
+        data: {action:'select', reason:'from dashboard'}
+      })
+  }
+}
+export function UnSelect(id, type) {
+  if ( type == 'question' ) {
+    console.log('question can not unselect')
+    throw new Error('question can not unselect')
+  } else {
+      return request({
+        url: '/censor/a/'+ id,
+        method: 'post',
+        data: {action:'unselect', reason:'from dashboard'}
+      })
+  }
+}
+
 export function Pass(id, type) {
   if ( type == 'question' ) {
       return request({
