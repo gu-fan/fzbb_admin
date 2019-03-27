@@ -38,17 +38,17 @@
           <el-input v-model="temp.name"/>
         </el-form-item>
 
-        <el-form-item label="password" prop="password">
-          <el-input v-model="temp.password"/>
-        </el-form-item>
+        <!-- <el-form-item label="password" prop="password"> -->
+        <!--   <el-input v-model="temp.password"/> -->
+        <!-- </el-form-item> -->
 
-        <el-form-item label="phone" prop="phone">
-          <el-input v-model="temp.phone"/>
-        </el-form-item>
+        <!-- <el-form-item label="phone" prop="phone"> -->
+        <!--   <el-input v-model="temp.phone"/> -->
+        <!-- </el-form-item> -->
 
-        <el-form-item label="permission" prop="permission">
-          <el-input v-model="temp.permission"/>
-        </el-form-item>
+        <!-- <el-form-item label="permission" prop="permission"> -->
+        <!--   <el-input v-model="temp.permission"/> -->
+        <!-- </el-form-item> -->
 
         <input id="file-selector" type="file" v-show="false" @change="onChange" ref="upload">
 
@@ -66,6 +66,28 @@
            @click="uploadAndSet">{{ confirm_or_progress }}</el-button>
       </div>
     </el-dialog>
+
+    <el-dialog title="verify" :visible.sync="verifyFormVisible">
+      <el-form ref="dataForm" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
+
+        <el-form-item label="名字" prop="name">
+          {{ temp.name }}
+        </el-form-item>
+        <el-form-item label="认证状态" prop="is_verified">
+        <el-checkbox v-model="temp.is_verified">是否认证</el-checkbox>
+        </el-form-item>
+        <el-form-item label="认证标语" prop="phone">
+          <el-input v-model="temp.verify_quote"/>
+        </el-form-item>
+
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="verifyFormVisible = false">取消</el-button>
+        <el-button type="primary" 
+           @click="VerifyConfirm">完成</el-button>
+      </div>
+    </el-dialog>
+
 
   <div class="app-container">
     <el-table
@@ -117,11 +139,18 @@
           <span>{{ scope.row.created_at|fromNow }}</span>
         </template>
       </el-table-column>
-
-      <el-table-column align="center" label="Actions" width="120">
+      <el-table-column align="center" prop="is_verified" label="认证情况" width="200">
         <template slot-scope="scope">
+          <span>{{ scope.row.is_verified }}</span>
+          <div>{{ scope.row.verify_quote }}</div>
+        </template>
+      </el-table-column>
+
+      <el-table-column align="center" label="Actions" width="220">
+        <template slot-scope="scope">
+          <el-button type="warning" size="small" icon="el-icon-edit" @click="Verify(scope.row)">认证</el-button>
           <el-button v-if="scope.row.edit" type="success" size="small" icon="el-icon-circle-check-outline" @click="confirmEdit(scope.row)">Ok</el-button>
-          <el-button v-else type="primary" size="small" icon="el-icon-edit" @click="Edit(scope.row)">Edit</el-button>
+          <el-button v-else type="primary" size="small" icon="el-icon-edit" @click="Edit(scope.row)">编辑</el-button>
         </template>
       </el-table-column>
 
@@ -132,7 +161,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { getUsers,setUser } from '@/api/user'
+import { getUsers,setUser,verifyUser } from '@/api/user'
 import { fromNow } from '@/utils/moment'
 import { Message, MessageBox } from 'element-ui'
 
@@ -197,7 +226,9 @@ export default {
         permission:'',
         avatar: '',
       },
+
       
+     verifyFormVisible :false,
 
     }
   },
@@ -216,8 +247,6 @@ export default {
         this.listLoading = false
       })
     },
-
-
 
     cancelEdit(row) {
       row.permission = row.oPermission
@@ -257,9 +286,11 @@ export default {
 
 
     Edit(row){
-      this.temp = row
+      this.temp = Object.assign(row, {})
+      
       this.dialogFormVisible = true
     },
+
 
     selectFile(){
       this.$refs.upload.click()
@@ -335,7 +366,23 @@ export default {
 
       });
     },
-
+    Verify(row){
+      this.temp = Object.assign(row, {})
+      this.temp.is_verified = this.temp.is_verified ? true : false
+      this.verifyFormVisible = true
+    },
+    VerifyConfirm(){
+      this.temp.is_verified = this.temp.is_verified ? 1 : 0
+      verifyUser(this.temp)
+        .then(res=>{
+          Message({
+            message: res.msg,
+            duration: 3 * 1000
+          })
+          this.verifyFormVisible = false
+          this.getUsers()
+        })
+    },
     onChange(e){
 
         var file =this.$refs.upload.files[0];

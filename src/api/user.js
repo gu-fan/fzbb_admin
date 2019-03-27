@@ -33,3 +33,11 @@ export function setUser(params) {
     })
   }
 }
+export function verifyUser(params) {
+    return request({
+      url: '/censor/user/'+ params.id+'/verify',
+      method: 'post',
+      data: params,
+    })
+}
+
