@@ -72,7 +72,7 @@
     <el-table-column align="center" label="Content" min-width="95">
       <template slot-scope="scope">
           <span v-if="scope.row.content_json==null">{{ scope.row.content.substring(0,80) }}</span>
-          <span v-else>{{ scope.row.content_json.brief.substring(0,80) }}</span>
+          <span v-else>{{ scope.row.brief.substring(0,80) }}</span>
 
       </template>
     </el-table-column>
@@ -148,7 +148,7 @@
           </div>
           
           <div>
-            {{ temp.created_at| fromNow }}
+            {{ temp.created_at | fromNow }}
           </div>
         </div>
 

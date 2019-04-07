@@ -73,7 +73,7 @@
     <el-table-column align="center" label="Content" min-width="95">
       <template slot-scope="scope">
           <span v-if="scope.row.content_json==null">{{ scope.row.content.substring(0,80) }}</span>
-          <span v-else>{{ scope.row.content_json.brief.substring(0,80) }}</span>
+          <span v-else>{{ scope.row.brief.substring(0,80) }}</span>
       </template>
     </el-table-column>
 
@@ -451,6 +451,9 @@ export default {
         author_id:'',
         title: '',
         content:'',
+        content_json: {v:"0",data:[
+          {text:"",t:"text"},
+        ]}
       }
     },
     createQuestion() {
