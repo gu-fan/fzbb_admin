@@ -104,6 +104,14 @@ export function editQuestion(params) {
       data: params,
     })
 }
+export function updateBanner(params) {
+    return request({
+      url: `/censor/q/${params.id}/banner`,
+      method: 'post',
+      data: params,
+    })
+}
+
 
 export function editAnswer(params) {
     return request({

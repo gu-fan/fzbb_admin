@@ -98,35 +98,6 @@
 
   </el-table>
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="date" prop="timestamp">
-          <el-input v-model="temp.timestamp"/>
-        </el-form-item>
-
-        <el-form-item label="author" prop="author">
-          <el-input v-model="temp.author_id"/>
-        </el-form-item>
-
-        <el-form-item label="title" prop="title">
-          <el-input v-model="temp.title"/>
-        </el-form-item>
-        <el-form-item label="content">
-          <el-input type="textarea" v-model="temp.content"/>
-        </el-form-item>
-        
-        <el-form-item label="status">
-          <el-select v-model="temp.censor_status" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item"/>
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">cancel</el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">confirm </el-button>
-      </div>
-    </el-dialog>
-
     <el-dialog title="View" :visible.sync="dialogViewVisible">
       <div>
         <div class="flex">
@@ -160,11 +131,16 @@
           </div>
         </div>
 
+        <div v-if="temp.title">
+            <el-checkbox v-model="temp.is_banner">是否Banner</el-checkbox>
+            <el-input type="number" v-model="temp.banner_index"/>
+        </div>
+
       </div>
 
       <div slot="footer" class="dialog-footer" style="margin-top:5px;">
         <el-button @click="dialogViewVisible = false">cancel</el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">confirm </el-button>
+        <el-button type="primary" @click="updateData">confirm </el-button>
       </div>
     </el-dialog>
 
@@ -176,6 +152,7 @@ import { getAnswers, getList,Reject,Pass,Select,UnSelect } from '@/api/censor'
 import {fromNow} from '@/utils/moment'
 import innerPane from './innnerPane'
 import {setContentBrief, setBrief} from '@/utils'
+import { updateBanner } from '@/api/censor'
 
 const calendarTypeOptions = [
   { key: 'all', display_name: 'All' },
@@ -226,7 +203,9 @@ export default {
         title: '',
         content:'',
         content_json:{v:"0",data:[]},
-        censor_status: 'published'
+        censor_status: 'published',
+        is_banner: 0,
+        banner_index: 0,
       },
       dialogFormVisible: false,
       dialogViewVisible: false,
@@ -249,18 +228,22 @@ export default {
     this.getList()
   },
   methods: {
-    handleCreate() {
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
 
     onView(row, idx){
       this.dialogStatus = 'view'
       this.dialogViewVisible = true
       this.temp = row
+      this.temp.is_banner = this.temp.is_banner ? true : false
+    },
+    updateData(){
+      if (this.temp.title){
+      
+        updateBanner(this.temp)
+          .then(res=>{
+            this.dialogViewVisible = false
+          })
+
+      }
     },
 
     onExpand(row, rows){
@@ -298,9 +281,9 @@ export default {
 
     onInnerSelect(param){
       var {id,idx,oIdx} = param
-      console.log(id)
-      console.log(idx)
-      console.log(oIdx)
+      // console.log(id)
+      // console.log(idx)
+      // console.log(oIdx)
       Select(id, 'answer')
         .then(res=>{
           if (this.type=="question") {
@@ -311,9 +294,9 @@ export default {
     },
     onInnerUnSelect(param){
       var {id,idx,oIdx} = param
-      console.log(id)
-      console.log(idx)
-      console.log(oIdx)
+      // console.log(id)
+      // console.log(idx)
+      // console.log(oIdx)
       UnSelect(id, 'answer')
         .then(res=>{
           if (this.type=="question") {
@@ -325,9 +308,9 @@ export default {
 
     onInnerPass(param){
       var {id,idx,oIdx} = param
-      console.log(id)
-      console.log(idx)
-      console.log(oIdx)
+      // console.log(id)
+      // console.log(idx)
+      // console.log(oIdx)
       Pass(id, 'answer')
         .then(res=>{
           if (this.type=="question") {
