@@ -61,6 +61,17 @@ export const asyncRouterMap = [
       meta: { title: 'Censor' }
     }]
   },
+  {
+    path: '/feedback',
+    component: Layout,
+    name: 'Feedback',
+    meta: { title: 'feedback', icon: 'table' },
+    children: [{
+      path: '/feedback',
+      component: () => import('@/views/feedback/index'),
+      meta: { title: 'Feedback' }
+    }]
+  },
 
   {
     path: '/editor',
