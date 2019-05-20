@@ -4,10 +4,19 @@
 
     <div class="flex vert-center" style="height:60px;">
       <div class="f1">
+
         <el-input :placeholder="type" v-model="listQuery.title" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter"/>
+
         <el-select v-model="listQuery.censor_status" placeholder="status" clearable class="filter-item" style="width: 130px">
           <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'" :value="item.key"/>
         </el-select>
+
+
+        <el-select v-if="type=='answer'" v-model="listQuery.is_selected" placeholder="status" clearable class="filter-item" style="width: 130px">
+          <el-option v-for="item in selectTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'" :value="item.key"/>
+        </el-select>
+
+
         <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">search</el-button>
 
       </div>
@@ -84,6 +93,54 @@
       </template>
     </el-table-column>
 
+      <el-table-column class-name="index-col" label="Index" width="120" v-if="type=='answer'">
+        <template slot-scope="scope">
+
+          <template v-if="scope.row.edit">
+            <el-input v-model="scope.row.banner_index" class="edit-input" size="small" />
+            <el-button
+              class="cancel-btn"
+              size="small"
+              icon="el-icon-refresh"
+              type="warning"
+              @click="cancelEdit(scope.row)"
+            >
+              cancel
+            </el-button>
+          </template>
+          <span v-else>{{ scope.row.banner_index }}</span>
+
+          <el-button
+            v-if="scope.row.edit"
+            type="success"
+            size="small"
+            icon="el-icon-circle-check-outline"
+            @click="confirmEdit(scope.row)"
+          >
+            Ok
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            size="small"
+            icon="el-icon-edit"
+            @click="scope.row.edit=!scope.row.edit"
+          >
+          </el-button>
+          
+        </template>
+      </el-table-column>
+
+      <el-table-column class-name="select-col" label="Select" width="120" v-if="type=='answer'">
+        <template slot-scope="scope">
+          <el-tag >{{ scope.row.is_selected }}</el-tag>
+
+              <el-button size="mini" v-if="!scope.row.is_selected" @click="onSelect(scope.row.id, scope.$index)">设置精华</el-button>
+
+              <el-button size="mini" v-else @click="onUnSelect(scope.row.id,  scope.$index)">取消精华</el-button>
+        </template>
+      </el-table-column>
+
     <el-table-column class-name="status-col" label="Action" width="160">
       <template slot-scope="scope">
         <div class="flex horz-center" style="padding:6px 0;">
@@ -148,7 +205,7 @@
 </template>
 
 <script>
-import { getAnswers, getList,Reject,Pass,Select,UnSelect } from '@/api/censor'
+import { getAnswers, getList,Reject,Pass,Select,UnSelect,SetIndex } from '@/api/censor'
 import {fromNow} from '@/utils/moment'
 import innerPane from './innnerPane'
 import {setContentBrief, setBrief} from '@/utils'
@@ -160,6 +217,10 @@ const calendarTypeOptions = [
   { key: 'pass', display_name: 'Pass' },
   { key: 'reject', display_name: 'Reject' },
   { key: 'reject_review', display_name: 'Review' },
+]
+const selectTypeOptions = [
+  { key: null, display_name: 'All' },
+  { key: true, display_name: 'BANNER' },
 ]
 
 export default {
@@ -182,12 +243,14 @@ export default {
   },
   data() {
     return {
+      selectTypeOptions,
       calendarTypeOptions,
       expand_list: [],
       list: null,
       listQuery: {
         page: 0,
         limit: 5,
+        is_selected: null,
         type: this.type,
         censor_status: null,
         sort: '+id'
@@ -277,6 +340,47 @@ export default {
     handleFilter() {
       this.listQuery.page = 0
       this.getList()
+    },
+
+    cancelEdit(row) {
+      row.banner_index = row.originalBannerIndex
+      row.edit = false
+      this.$message({
+        message: 'The index has been restored to the original value',
+        type: 'warning'
+      })
+    },
+    async confirmEdit(row) {
+      row.edit = false
+      SetIndex(row.id, parseInt(row.banner_index))
+        .then(res=>{
+            row.originalBannerIndex = res.answer.banner_index
+        })
+      
+      this.$message({
+        message: 'The index has been edited',
+        type: 'success'
+      })
+    },
+
+    onSelect(id, idx){
+      Select(id, 'answer')
+        .then(res=>{
+          if (this.type=="answer") {
+            let ans = setBrief(res.answer)
+            this.list.splice(idx, 1, ans)
+          }
+        })
+    },
+
+    onUnSelect(id, idx){
+      UnSelect(id, 'answer')
+        .then(res=>{
+          if (this.type=="answer") {
+            let ans = setBrief(res.answer)
+            this.list.splice(idx, 1, ans)
+          }
+        })
     },
 
     onInnerSelect(param){
@@ -369,6 +473,11 @@ export default {
         } else {
           this.total = data.answers.total
           this.list = setContentBrief(data.answers.results)
+          this.list = this.list.map(v => {
+            this.$set(v, 'edit', false) 
+            v.originalBannerIndex= v.banner_index
+            return v
+          })
 
         }
         this.loading = false

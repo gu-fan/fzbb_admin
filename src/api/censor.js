@@ -39,6 +39,13 @@ export function Reject(id, type) {
       })
   }
 }
+export function SetIndex(id, banner_index) {
+      return request({
+        url: '/censor/a/'+ id+'/index',
+        method: 'post',
+        data: { banner_index}
+      })
+}
 
 export function Select(id, type) {
   if ( type == 'question' ) {

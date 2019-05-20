@@ -32,11 +32,14 @@
 
           </template>
         </el-table-column>
+
+        
       <el-table-column class-name="select-col" label="Select" width="80">
         <template slot-scope="innerScope">
           <el-tag >{{ innerScope.row.is_selected }}</el-tag>
 
               <el-button size="mini" v-if="!innerScope.row.is_selected" @click="onSelect(innerScope.row.id, innerScope.$index, scope.$index)">精华</el-button>
+
               <el-button size="mini" v-else @click="onUnSelect(innerScope.row.id, innerScope.$index, scope.$index)">取消精华</el-button>
         </template>
       </el-table-column>
